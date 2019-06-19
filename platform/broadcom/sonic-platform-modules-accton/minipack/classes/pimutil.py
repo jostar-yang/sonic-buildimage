@@ -70,6 +70,7 @@ dom_base = [
 
 dom = {
   "revision": 0x0,
+  "system_led": 0xC,
   "intr_status": 0x2C,
   "qsfp_present": 0x48,
   "qsfp_present_intr": 0x50,
@@ -79,6 +80,34 @@ dom = {
   "qsfp_reset": 0x70,
   "qsfp_lp_mode": 0x78,
   "device_power_bad_status": 0x90,
+  "port_led_color_profile": {
+    0: 0x300,
+    1: 0x300,
+    2: 0x304,
+    3: 0x304,
+    4: 0x308,
+    5: 0x308,
+    6: 0x30C,
+    7: 0x30C,
+  },
+  "port_led_control": {
+    1: 0x310,
+    2: 0x314,
+    3: 0x318,
+    4: 0x31C,
+    5: 0x320,
+    6: 0x324,
+    7: 0x328,
+    8: 0x32C,
+    9: 0x330,
+    10: 0x334,
+    11: 0x338,
+    12: 0x33C,
+    13: 0x340,
+    14: 0x344,
+    15: 0x348,
+    16: 0x34C,
+  },
   "dom_control_config": 0x410,
   "dom_global_status": 0x414,
   "dom_data": 0x4000,
@@ -339,6 +368,34 @@ class PimUtil(object):
         return False, {}
 
 
+    def get_pim_max_number(self):
+        return 8
+        
+    #pim_num start from 0 to 7
+    #color:0=amber, 1=blue
+    #contrl:off(0),on(1), flash(2)    
+    def set_pim_led(self, pim_num, color, control):
+        if pim_num <0 or pim_num > 7:
+            return False
+        
+        led_val=fpga_io(dom_base[pim_num+1]+dom["system_led"])
+        
+        if color==1:
+           led_val = led_val | 0x8000 #blue
+        else:
+           led_val = led_val & ( ~ 0x8000) #amber
+        
+        if control==0:
+           led_val = led_val & ( ~ 0x3000) #Off
+        elif control==1:
+           led_val = led_val & ( ~ 0x3000) #Off
+           led_val = led_val | 0x1000 #On
+        else:
+            led_val = led_val | 0x3000  #Flash
+        
+        led_val = led_val | 0x4000
+        fpga_io(dom_base[pim_num+1]+dom["system_led"], led_val)
+     
     def get_qsfp_presence(self, port_num):
          #xlate port to get pim_num
          status, pim_num=self.get_pim_by_port(port_num)
