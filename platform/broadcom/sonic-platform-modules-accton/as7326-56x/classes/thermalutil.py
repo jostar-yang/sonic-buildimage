@@ -74,10 +74,10 @@ class ThermalUtil(object):
             THERMAL_NUM_4_IDX: ['15', '4b'],
            }
     thermal_sysfspath ={
-    THERMAL_NUM_1_IDX: ["/sys/bus/i2c/drivers/lm75/15-0048/hwmon/hwmon2/temp1_input"],
-    THERMAL_NUM_2_IDX: ["/sys/bus/i2c/drivers/lm75/15-0049/hwmon/hwmon3/temp1_input"],  
-    THERMAL_NUM_3_IDX: ["/sys/bus/i2c/drivers/lm75/15-004a/hwmon/hwmon4/temp1_input"],
-    THERMAL_NUM_4_IDX: ["/sys/bus/i2c/drivers/lm75/15-004b/hwmon/hwmon5/temp1_input"],        
+    THERMAL_NUM_1_IDX: ["/sys/bus/i2c/drivers/lm75/15-0048/hwmon/hwmon*/temp1_input"],
+    THERMAL_NUM_2_IDX: ["/sys/bus/i2c/drivers/lm75/15-0049/hwmon/hwmon*/temp1_input"],  
+    THERMAL_NUM_3_IDX: ["/sys/bus/i2c/drivers/lm75/15-004a/hwmon/hwmon*/temp1_input"],
+    THERMAL_NUM_4_IDX: ["/sys/bus/i2c/drivers/lm75/15-004b/hwmon/hwmon*/temp1_input"],        
     THERMAL_NUM_5_IDX: ["/sys/class/hwmon/hwmon0/temp1_input"],     
            }
 
@@ -89,28 +89,25 @@ class ThermalUtil(object):
             return None
 
         if thermal_num < self.THERMAL_NUM_6_IDX:
-        device_path = self.get_thermal_to_device_path(thermal_num)
-            if(os.path.isfile(device_path)):                
-        for filename in glob.glob(device_path):
-            try:
-                val_file = open(filename, 'r')
-            except IOError as e:
-                logging.error('GET. unable to open file: %s', str(e))
-                return None
-        content = val_file.readline().rstrip()
-        if content == '':
-            logging.debug('GET. content is NULL. device_path:%s', device_path)
-            return None
-        try:
-		    val_file.close()
-        except:
-            logging.debug('GET. unable to close file. device_path:%s', device_path)
-            return None
+            device_path = self.get_thermal_to_device_path(thermal_num)
+            
+            for filename in glob.glob(device_path):
+                try:
+                    val_file = open(filename, 'r')
+                except IOError as e:
+                    logging.error('GET. unable to open file: %s', str(e))
+                    return None
+
+                content = val_file.readline().rstrip()
+                if content == '':
+                    logging.debug('GET. content is NULL. device_path:%s', device_path)
+                    return None
+                try:
+                    val_file.close()
+                except:
+                    logging.debug('GET. unable to close file. device_path:%s', device_path)
+                    return None
                 return int(content)
-      
-            else:
-                print "No such device_path=%s"%device_path
-                return 0
 
         else:
             log_os_system(self.BCM_thermal_cmd,0)
@@ -122,8 +119,7 @@ class ThermalUtil(object):
                 print "Error: unable to open file: %s" % str(e) 
                 return 0  
             file_str = check_file.read()
-            search_str="average current temperature is"
-            print "file_str.find=%s"%file_str.find(search_str)
+            search_str="average current temperature is"            
             str_len = len(search_str)
             idx=file_str.find(search_str)
             if idx==-1:
@@ -139,7 +135,7 @@ class ThermalUtil(object):
                 #print "file_str[idx]=%c"%file_str[idx+str_len+2+5]
                 #print "file_str[idx]=%c"%file_str[idx+str_len+2+6]
                 temp_str=file_str[idx+str_len+1] + file_str[idx+str_len+2] + file_str[idx+str_len+3]+file_str[idx+str_len+4] +file_str[idx+str_len+5]
-                print "bcm temp_str=%s"%temp_str
+                #print "bcm temp_str=%s"%temp_str
                 check_file.close()                 
                 return float(temp_str)*1000
 
