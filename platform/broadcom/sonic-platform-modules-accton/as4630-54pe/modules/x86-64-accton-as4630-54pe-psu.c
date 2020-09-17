@@ -309,8 +309,8 @@ static struct as4630_54pe_psu_data *as4630_54pe_psu_update_device(struct device 
             }
             if (!strncmp(data->model_name, "YPEB1200AM", strlen("YPEB1200AM"))) /*for YPEB1200AM, SN length=18*/
             {
-            data->serial_number[MAX_SERIAL_NUMBER-1]='\0';
-        }
+                data->serial_number[MAX_SERIAL_NUMBER-1]='\0';
+            }
             else
                 data->serial_number[MAX_SERIAL_NUMBER-2]='\0';
             
