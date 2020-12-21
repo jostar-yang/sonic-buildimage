@@ -231,7 +231,7 @@ def ir3570_check():
 
 def  show_eeprom_help():
     cmd =  sys.argv[0].split("/")[-1]+ " "  + args[0]
-    print  "    use \""+ cmd + " 1-32 \" to dump sfp# eeprom"
+    print  "    use \""+ cmd + " 1-34 \" to dump sfp# eeprom"
     sys.exit(0)
 
 def my_log(txt):
@@ -290,7 +290,6 @@ def driver_uninstall():
     for i in range(0,len(kos)):
         rm = kos[-(i+1)].replace("modprobe", "modprobe -rq")        
         lst = rm.split(" ")
-        print "lst=%s"%lst
         if len(lst) > 3:
             del(lst[3])
         rm = " ".join(lst)
@@ -386,7 +385,7 @@ def system_ready():
     if driver_inserted() == False:        
         return False
     if not device_exist():
-        print "not device_exist()"
+        print("not device_exist()")
         return False
     return True
 
@@ -397,7 +396,7 @@ def do_install():
             if FORCE == 0:
                 return  status
     else:
-        print PROJECT_NAME.upper()+" drivers detected...."
+        print(PROJECT_NAME.upper()+" drivers detected....")
 
     ir3570_check()
 
@@ -407,23 +406,23 @@ def do_install():
             if FORCE == 0:
                 return  status
     else:
-        print PROJECT_NAME.upper()+" devices detected...."
+        print(PROJECT_NAME.upper()+" devices detected....")
     return
 
 def do_uninstall():
     if not device_exist():
-        print PROJECT_NAME.upper() +" has no device installed...."
+        print(PROJECT_NAME.upper() +" has no device installed....")
     else:
-        print "Removing device...."
+        print("Removing device....")
         status = device_uninstall()
         if status:
             if FORCE == 0:
                 return  status
 
     if driver_inserted()== False :
-        print PROJECT_NAME.upper() +" has no driver installed...."
+        print(PROJECT_NAME.upper() +" has no driver installed....")
     else:
-        print "Removing installed driver...."
+        print( "Removing installed driver....")
         status = driver_uninstall()
         if status:
             if FORCE == 0:
@@ -483,17 +482,18 @@ def devices_info():
                     print("   "+"   "+k)
     return
 
-def show_eeprom(index):
+def show_eeprom(port_index):
     if system_ready()==False:
         print("System's not ready.")
         print("Please install first!")
         return
 
-    #if len(ALL_DEVICE)==0:
-    #    devices_info()
-    #node = ALL_DEVICE['sfp'] ['sfp'+str(index)][0]
-    #node = node.replace(node.split("/")[-1], 'eeprom')
-    node= "/sys/bus/i2c/devices/"+str(sfp_map[int(index)])+"-0050" + "/eeprom"
+    idx=int(port_index)
+    if idx < 1 or idx > 34:
+        print("port index range 1 -34")
+        return 0
+    
+    node= "/sys/bus/i2c/devices/"+str(sfp_map[idx-1])+"-0050" + "/eeprom"
     # check if got hexdump command in current environment
     ret, log = log_os_system("which hexdump", 0)
     ret, log2 = log_os_system("which busybox hexdump", 0)
@@ -504,16 +504,14 @@ def show_eeprom(index):
     else:
         log = 'Failed : no hexdump cmd!!'
         logging.info(log)
-        print log
+        print(log)
         return 1
-    print "node=%s"%node
-    #print node + ":"
-    #ret, log = log_os_system("cat "+node+"| "+hex_cmd+" -C", 1)
+        
     ret, log = log_os_system(hex_cmd+" -C " + node, 1)
     if ret==0:
-        print  log
+        print(log)
     else:
-        print "**********device no found**********"
+        print("**********device no found**********")
     return
 
 def set_device(args):
@@ -541,8 +539,7 @@ def set_device(args):
         if int(args[1])>100:
             show_set_help()
             return
-        #print  ALL_DEVICE['fan']
-        #fan1~6 is all fine, all fan share same setting
+        
         node = ALL_DEVICE['fan1'] ['fan11'][0]
         node = node.replace(node.split("/")[-1], 'fan1_duty_cycle_percentage')
         ret, log = log_os_system("cat "+ node, 1)
@@ -563,8 +560,7 @@ def set_device(args):
         if int(args[2])>1:
             show_set_help()
             return
-
-        #print  ALL_DEVICE[args[0]]
+        
         for i in range(0,len(ALL_DEVICE[args[0]])):
             for j in ALL_DEVICE[args[0]][args[0]+str(args[1])]:
                 if j.find('tx_disable')!= -1:
