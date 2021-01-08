@@ -22,7 +22,6 @@
 # ------------------------------------------------------------------
 
 try:
-    import os
     import time
     import logging
     import glob
