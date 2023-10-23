@@ -347,17 +347,14 @@ static int as7716_32x_led_probe(struct platform_device *pdev)
 {
 	int ret, i;
     
-    printk("as7716_32x_led_probe 1\n");
 	for (i = 0; i < ARRAY_SIZE(as7716_32x_leds); i++) {
 		ret = led_classdev_register(&pdev->dev, &as7716_32x_leds[i]);
 		
 		if (ret < 0)
 		{
-		    printk("ret < 0, i=%d\n", i);
 			break;
 	    }
 	}
-	printk("as7716_32x_led_probe 2\n");
 	/* Check if all LEDs were successfully registered */
 	if (i != ARRAY_SIZE(as7716_32x_leds)){
 		int j;
@@ -368,7 +365,6 @@ static int as7716_32x_led_probe(struct platform_device *pdev)
 		}
 	}
     
-    printk("as7716_32x_led_probe 3\n"); 
 	return 0;
 }
 
@@ -398,13 +394,10 @@ static int __init as7716_32x_led_init(void)
 {
 	int ret;
 
-	printk("leds:1\n");
 	ret = platform_driver_register(&as7716_32x_led_driver);
 	if (ret < 0) {
-	    printk("leds:fail platform_driver_register\n");
 		goto exit;
 	}
-    printk("leds:2\n");
 	ledctl = kzalloc(sizeof(struct as7716_32x_led_data), GFP_KERNEL);
 	if (!ledctl) {
 		ret = -ENOMEM;
@@ -413,10 +406,8 @@ static int __init as7716_32x_led_init(void)
 	}
 
 	mutex_init(&ledctl->update_lock);
-    printk("leds:3\n");
 	ledctl->pdev = platform_device_register_simple(DRVNAME, -1, NULL, 0);
 	if (IS_ERR(ledctl->pdev)) {
-	    printk("leds:fail platform_device_register_simple\n");
 		ret = PTR_ERR(ledctl->pdev);
 		platform_driver_unregister(&as7716_32x_led_driver);
 		kfree(ledctl);

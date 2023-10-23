@@ -18,75 +18,100 @@
 # ------------------------------------------------------------------
 # HISTORY:
 #    mm/dd/yyyy (A.D.)
-#    5/27/2019:  Brandon_Chuang create
+#    11/13/2017: Polly Hsu, Create
+#
 # ------------------------------------------------------------------
 
 try:
     import time
     import logging
     import glob
-    import subprocess
     from collections import namedtuple
 except ImportError as e:
     raise ImportError('%s - required module not found' % str(e))
 
+
 class ThermalUtil(object):
     """Platform-specific ThermalUtil class"""
-    THERMAL_NUM_MAX = 4
-    THERMAL_NUM_1_IDX = 1 # 1_ON_CPU_BROAD.  LM75
-    THERMAL_NUM_2_IDX = 2 # 2_ON_MAIN_BROAD. LM75
-    THERMAL_NUM_3_IDX = 3 # 3_ON_MAIN_BROAD. LM75
-    THERMAL_NUM_4_IDX = 4 # 4_ON_MAIN_BROAD. LM75
-    
+
+    THERMAL_NUM_ON_MAIN_BROAD = 3
+    THERMAL_NUM_1_IDX = 1 # 1_ON_MAIN_BROAD
+    THERMAL_NUM_2_IDX = 2 # 2_ON_MAIN_BROAD
+    THERMAL_NUM_3_IDX = 3 # 3_ON_MAIN_BROAD
+
+    BASE_VAL_PATH = '/sys/bus/i2c/devices/{0}-00{1}/hwmon/hwmon*/temp1_input'
+
     """ Dictionary where
         key1 = thermal id index (integer) starting from 1
         value = path to fan device file (string) """
-       
-    thermal_sysfspath ={
-    THERMAL_NUM_1_IDX: ["/sys/bus/i2c/devices/18-004b/hwmon/hwmon*/temp1_input"],
-    THERMAL_NUM_2_IDX: ["/sys/bus/i2c/devices/19-004c/hwmon/hwmon*/temp1_input"],
-    THERMAL_NUM_3_IDX: ["/sys/bus/i2c/devices/20-0049/hwmon/hwmon*/temp1_input"],
-    THERMAL_NUM_4_IDX: ["/sys/bus/i2c/devices/21-004a/hwmon/hwmon*/temp1_input"],
-    }
+    _thermal_to_device_path_mapping = {}
 
-    def get_thermal_val(self, thermal_num):
-        if thermal_num < self.THERMAL_NUM_1_IDX or thermal_num > self.THERMAL_NUM_MAX:
-            logging.debug('GET. Parameter error. thermal_num, %d', thermal_num)
+    _thermal_to_device_node_mapping = {
+            THERMAL_NUM_1_IDX: ['61', '48'],
+            THERMAL_NUM_2_IDX: ['62', '49'],
+            THERMAL_NUM_3_IDX: ['63', '4a'],
+           }
+
+    logger = logging.getLogger(__name__)
+    def __init__(self, log_level=logging.DEBUG):
+        ch = logging.StreamHandler()
+        ch.setLevel(log_level)
+        self.logger.addHandler(ch)
+        thermal_path = self.BASE_VAL_PATH
+
+        for x in range(self.THERMAL_NUM_1_IDX, self.THERMAL_NUM_ON_MAIN_BROAD+1):
+            self._thermal_to_device_path_mapping[x] = thermal_path.format(
+                self._thermal_to_device_node_mapping[x][0],
+                self._thermal_to_device_node_mapping[x][1])
+
+    def _get_thermal_node_val(self, thermal_num):
+        if thermal_num < self.THERMAL_NUM_1_IDX or thermal_num > self.THERMAL_NUM_ON_MAIN_BROAD:
+            self.logger.debug('GET. Parameter error. thermal_num, %d', thermal_num)
             return None
-       
-        device_path = self.get_thermal_path(thermal_num)
+
+        device_path = self.get_thermal_to_device_path(thermal_num)
         for filename in glob.glob(device_path):
             try:
                 val_file = open(filename, 'r')
             except IOError as e:
-                logging.error('GET. unable to open file: %s', str(e))
+                self.logger.error('GET. unable to open file: %s', str(e))
                 return None
+
             content = val_file.readline().rstrip()
+
             if content == '':
-                logging.debug('GET. content is NULL. device_path:%s', device_path)
+                self.logger.debug('GET. content is NULL. device_path:%s', device_path)
                 return None
+
             try:
                 val_file.close()
             except:
-                logging.debug('GET. unable to close file. device_path:%s', device_path)
-                return None      
+                self.logger.debug('GET. unable to close file. device_path:%s', device_path)
+                return None
+
             return int(content)
-        
+
         return 0
 
+        
     def get_num_thermals(self):
-        return self.THERMAL_NUM_MAX
-    
-    def get_thermal_path(self, thermal_num):
-        return self.thermal_sysfspath[thermal_num][0]
+        return self.THERMAL_NUM_ON_MAIN_BROAD
 
-def main():
-    thermal = ThermalUtil()
-    logging.basicConfig(level=logging.DEBUG) 
-    logging.debug('thermal1=%d', thermal.get_thermal_val(1))
-    logging.debug('thermal2=%d', thermal.get_thermal_val(2))
-    logging.debug('thermal3=%d', thermal.get_thermal_val(3))
-    logging.debug('thermal4=%d', thermal.get_thermal_val(4))
+    def get_idx_thermal_start(self):
+        return self.THERMAL_NUM_1_IDX
 
-if __name__ == '__main__':
-    main()
+    def get_size_node_map(self):
+        return len(self._thermal_to_device_node_mapping)
+
+    def get_size_path_map(self):
+        return len(self._thermal_to_device_path_mapping)
+
+    def get_thermal_to_device_path(self, thermal_num):
+        return self._thermal_to_device_path_mapping[thermal_num]
+
+    def get_thermal_1_val(self):
+        return self._get_thermal_node_val(self.THERMAL_NUM_1_IDX)
+
+    def get_thermal_2_val(self):
+        return self._get_thermal_node_val(self.THERMAL_NUM_2_IDX)
+
